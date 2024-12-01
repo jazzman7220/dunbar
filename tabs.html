@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web Browser</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.16/dist/tailwind.min.css" rel="stylesheet">
+  <style>
+    body {
+      height: 100vh;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      background-color: #333;
+    }
+
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      padding: 10px;
+      background-color: #444;
+      border-bottom: 1px solid #555;
+    }
+
+    .tab {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      border: 1px solid #555;
+      border-radius: 5px;
+      background-color: #333;
+      min-width: 100px;
+      cursor: pointer;
+    }
+
+    .tab.active {
+      background-color: #444;
+    }
+
+    .close-tab {
+      font-size: 16px;
+      cursor: pointer;
+      color: #fff;
+    }
+
+    .new-tab {
+      font-size: 24px;
+      cursor: pointer;
+      padding: 0 10px;
+      border: none;
+      background-color: transparent;
+      color: #fff;
+    }
+
+    .url-bar {
+      padding: 10px;
+      border: 1px solid #555;
+      border-radius: 5px;
+      width: 100%;
+      background-color: #333;
+      color: #fff;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      padding: 10px;
+      background-color: #444;
+      border-bottom: 1px solid #555;
+    }
+
+    .fullscreen {
+      font-size: 16px;
+      cursor: pointer;
+      color: #fff;
+    }
+
+    .reload {
+      font-size: 16px;
+      cursor: pointer;
+      color: #fff;
+    }
+
+    .iframe-container {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #555;
+      border-radius: 5px;
+      overflow: hidden;
+    }
+
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="tabs" id="tabs">
+    <button class="new-tab" id="new-tab-btn">+</button>
+  </div>
+  <div class="controls">
+    <input type="text" id="url-bar" class="url-bar" value="https://www.google.com/search?igu=1">
+    <button class="fullscreen" id="fullscreen-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+      </svg>
+    </button>
+    <button class="reload" id="reload-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+      </svg>
+    </button>
+  </div>
+  <div class="iframe-container" id="iframe-container">
+  </div>
+
+  <script>
+    let currentTab = 0;
+    let tabs = [];
+    const tabsElement = document.getElementById('tabs');
+    const urlBar = document.getElementById('url-bar');
+    const iframeContainer = document.getElementById('iframe-container');
+    const fullscreenBtn = document.getElementById('fullscreen-btn');
+    const reloadBtn = document.getElementById('reload-btn');
+    const newTabBtn = document.getElementById('new-tab-btn');
+
+    function createTab(title, url) {
+      const tab = document.createElement('div');
+      tab.classList.add('tab');
+      tab.innerHTML = `
+        <span id="tab-title">${title}</span>
+        <button class="close-tab">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      `;
+      tabsElement.appendChild(tab);
+      const iframe = document.createElement('iframe');
+      iframe.src = url;
+      iframe.addEventListener('load', () => {
+        if (iframe.contentDocument) {
+          const title = iframe.contentDocument.title;
+          tab.querySelector('#tab-title').textContent = title;
+        }
+      });
+      iframeContainer.appendChild(iframe);
+      tabs.push({ title, url, tab, iframe });
+      tab.addEventListener('click', () => {
+        currentTab = tabs.indexOf(tabs.find(t => t.tab === tab));
+        updateTabs();
+      });
+      tab.querySelector('.close-tab').addEventListener('click', () => {
+        const indexToRemove = tabs.indexOf(tabs.find(t => t.tab === tab));
+        tabs.splice(indexToRemove, 1);
+        iframeContainer.removeChild(iframe);
+        if (currentTab >= tabs.length) currentTab = tabs.length - 1;
+        if (tabs.length === 0) {
+          createTab('Google', 'https://www.google.com/search?igu=1');
+        }
+        updateTabs();
+      });
+    }
+
+    function updateTabs() {
+      tabsElement.innerHTML = '';
+      tabsElement.appendChild(newTabBtn);
+      tabs.forEach((tab, index) => {
+        tab.tab.classList.toggle('active', index === currentTab);
+        tabsElement.appendChild(tab.tab);
+      });
+      tabs.forEach(tab => {
+        tab.iframe.style.display = tab === tabs[currentTab] ? 'block' : 'none';
+      });
+      if (tabs[currentTab]) {
+        urlBar.value = tabs[currentTab].url;
+      }
+    }
+
+    createTab('Google', 'https://www.google.com/search?igu=1');
+
+    urlBar.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        const url = urlBar.value;
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+          urlBar.value = `https://${url}`;
+        }
+        createTab(url, urlBar.value);
+        currentTab = tabs.length - 1;
+        updateTabs();
+      }
+    });
+
+    newTabBtn.addEventListener('click', () => {
+      createTab('Google', 'https://www.google.com/search?igu=1');
+      currentTab = tabs.length - 1;
+      updateTabs();
+    });
+
+    fullscreenBtn.addEventListener('click', () => {
+      document.documentElement.requestFullscreen();
+    });
+
+    reloadBtn.addEventListener('click', () => {
+      if (tabs[currentTab]) {
+        tabs[currentTab].iframe.src = tabs[currentTab].iframe.src;
+      }
+    });
+  </script>
+</body>
+</html>
